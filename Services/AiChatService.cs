@@ -36,7 +36,7 @@ namespace MiniEXEL.Services
             if (settings.Provider == "OpenRouter")
             {
                 req.Headers.Add("HTTP-Referer", "https://miniexel.local");
-                req.Headers.Add("X-Title", "MiniEXEL");
+                req.Headers.Add("X-Title", "Excel Lite + AI");
             }
             req.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
 

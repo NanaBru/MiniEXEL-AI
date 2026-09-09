@@ -23,8 +23,8 @@ public partial class MainWindow : Window
     private string _searchText = string.Empty;
     private bool _showFavoritesOnly;
 
-    private const string CurrentVersion = "v1.0.0";
-    private const string LatestReleaseUrl = "https://github.com/NanaBru/MiniEXEL-AI/releases/latest";
+    private const string CurrentVersion = "v1.1.0";
+    private const string LatestReleaseUrl = "https://github.com/NanaBru/ExcelLite-AI/releases/latest";
 
     public MainWindow()
     {
@@ -70,7 +70,7 @@ public partial class MainWindow : Window
         try
         {
             _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("MiniEXEL-App");
-            var json = await _httpClient.GetStringAsync("https://api.github.com/repos/NanaBru/MiniEXEL-AI/releases/latest");
+            var json = await _httpClient.GetStringAsync("https://api.github.com/repos/NanaBru/ExcelLite-AI/releases/latest");
             using var doc = System.Text.Json.JsonDocument.Parse(json);
             var tag = doc.RootElement.GetProperty("tag_name").GetString();
 

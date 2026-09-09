@@ -7,7 +7,7 @@
         xmlns:views="clr-namespace:MiniEXEL.Views"
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         mc:Ignorable="d"
-        Title="MiniEXEL - Visor ligero de Excel" Height="680" Width="1150"
+        Title="Excel Lite - Visor ligero de Excel" Height="680" Width="1150"
         MinHeight="460" MinWidth="820"
         Icon="icon.ico"
         WindowStyle="None" ResizeMode="CanResize" Background="#0F1512"
@@ -59,7 +59,7 @@
 
             <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="12,0,0,0">
                 <Image Source="icon.ico" Width="18" Height="18" VerticalAlignment="Center"/>
-                <TextBlock Text="MiniEXEL" FontWeight="Bold" Foreground="{StaticResource TextPrimary}"
+                <TextBlock Text="Excel Lite" FontWeight="Bold" Foreground="{StaticResource TextPrimary}"
                            VerticalAlignment="Center" Margin="8,0,0,0"/>
             </StackPanel>
 

@@ -11,8 +11,10 @@
     <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
     <TieredPGO>true</TieredPGO>
     <InvariantGlobalization>false</InvariantGlobalization>
-    <AssemblyName>MiniEXEL</AssemblyName>
-    <ApplicationTitle>MiniEXEL</ApplicationTitle>
+    <AssemblyName>ExcelLite</AssemblyName>
+    <ApplicationTitle>Excel Lite + AI</ApplicationTitle>
+    <Product>Excel Lite + AI</Product>
+    <AssemblyTitle>Excel Lite + AI</AssemblyTitle>
   </PropertyGroup>
 
   <ItemGroup>
