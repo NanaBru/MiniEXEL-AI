@@ -3,10 +3,6 @@
 Visor y editor de Excel nativo para Windows, liviano y rápido: detecta tus archivos recientes, los abre con vista estilo Excel (colores, fórmulas, imágenes), y trae un asistente de IA integrado para consultar y modificar tus hojas.
 
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/NanaBru/ExcelLite-AI@master/assets/preview.png" alt="Excel Lite - logo e iconografía" width="480"/>
-</p>
-
-<p align="center">
   <img src="https://cdn.jsdelivr.net/gh/NanaBru/ExcelLite-AI@master/assets/app-screenshot.png" alt="Excel Lite - pantalla principal" width="480"/>
 </p>
 
