@@ -280,14 +280,25 @@ public partial class WorkbookView : UserControl
 
     // ---------------- Find & replace ----------------
 
+    // Cross-sheet find cursor: which sheet/row/col the last match was on, so
+    // "Siguiente" resumes from there and wraps around the whole workbook.
+    private string? _findSheet;
+    private int _findRow = -1, _findCol = -1;
+
     private void BtnFind_Click(object sender, RoutedEventArgs e)
     {
         FindBar.Visibility = FindBar.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
         if (FindBar.Visibility == Visibility.Visible)
         {
-            Pane1.ResetFind();
+            ResetFindCursor();
             TxtFind.Focus();
         }
+    }
+
+    private void ResetFindCursor()
+    {
+        _findSheet = null; _findRow = -1; _findCol = -1;
+        Pane1.ResetFind();
     }
 
     private void BtnCloseFind_Click(object sender, RoutedEventArgs e)
@@ -301,14 +312,64 @@ public partial class WorkbookView : UserControl
         if (e.Key == Key.Enter) { BtnFindNext_Click(sender, e); e.Handled = true; }
     }
 
-    private void BtnFindNext_Click(object sender, RoutedEventArgs e)
+    private async void BtnFindNext_Click(object sender, RoutedEventArgs e)
     {
         var query = TxtFind.Text;
-        if (string.IsNullOrEmpty(query)) return;
+        if (string.IsNullOrEmpty(query) || _workbook == null) return;
 
-        bool found = Pane1.FindNext(query);
-        TxtFindStatus.Text = found ? "Encontrado." : "Sin más resultados en esta hoja.";
-        if (!found) Pane1.ResetFind();
+        bool found = await FindNextAcrossSheetsAsync(query);
+        TxtFindStatus.Text = found
+            ? $"Encontrado en \"{_findSheet}\"."
+            : "Sin más resultados en todo el libro.";
+        if (!found) ResetFindCursor();
+    }
+
+    // Searches every sheet of the workbook (starting right after the last
+    // match, wrapping around) for the query, switches the primary pane to
+    // whichever sheet it lands on, and selects the matching cell there.
+    private async Task<bool> FindNextAcrossSheetsAsync(string query)
+    {
+        if (_workbook == null || _sheetNames.Count == 0) return false;
+
+        int startSheetIdx = _findSheet != null ? _sheetNames.IndexOf(_findSheet) : 0;
+        if (startSheetIdx < 0) startSheetIdx = 0;
+
+        for (int s = 0; s < _sheetNames.Count; s++)
+        {
+            int sheetIdx = (startSheetIdx + s) % _sheetNames.Count;
+            var sheetName = _sheetNames[sheetIdx];
+            var ws = _workbook.Worksheet(sheetName);
+            var used = ws.RangeUsed();
+            if (used == null) continue;
+
+            int maxR = Math.Min(used.RowCount(), WorkbookService.MaxRows);
+            int maxC = Math.Min(used.ColumnCount(), WorkbookService.MaxCols);
+            bool sameSheetAsLastMatch = sheetName == _findSheet;
+
+            for (int r = 1; r <= maxR; r++)
+            {
+                for (int c = 1; c <= maxC; c++)
+                {
+                    // Skip everything up to (and including) where we left off.
+                    if (sameSheetAsLastMatch && (r < _findRow || (r == _findRow && c <= _findCol))) continue;
+
+                    var cell = ws.Cell(r, c);
+                    string text;
+                    try { text = cell.Value.ToString() ?? string.Empty; }
+                    catch { text = cell.GetString(); }
+
+                    if (text.Contains(query, StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        _findSheet = sheetName; _findRow = r; _findCol = c;
+                        if (Pane1.CurrentSheetName != sheetName)
+                            await Pane1.SwitchToSheetAsync(sheetName);
+                        Pane1.SelectCellByAddress(cell.Address.ToString());
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     private async void BtnReplaceAll_Click(object sender, RoutedEventArgs e)
@@ -316,8 +377,10 @@ public partial class WorkbookView : UserControl
         var query = TxtFind.Text;
         if (string.IsNullOrEmpty(query)) return;
 
+        // Replace stays scoped to the sheet currently shown, on purpose — a
+        // silent workbook-wide rewrite is too easy to regret.
         int count = await Pane1.ReplaceAllAsync(query, TxtReplace.Text);
-        TxtFindStatus.Text = count > 0 ? $"{count} reemplazo(s) hecho(s)." : "Sin coincidencias.";
+        TxtFindStatus.Text = count > 0 ? $"{count} reemplazo(s) hecho(s) en \"{Pane1.CurrentSheetName}\"." : "Sin coincidencias en esta hoja.";
         if (count > 0) SetDirty(true);
     }
 
@@ -337,6 +400,7 @@ public partial class WorkbookView : UserControl
         BtnSplit.Content = "▤ Ver dos hojas";
 
         FindBar.Visibility = Visibility.Collapsed;
+        _findSheet = null; _findRow = -1; _findCol = -1;
         _undoStack.Clear();
         _redoStack.Clear();
         UpdateUndoRedoButtons();

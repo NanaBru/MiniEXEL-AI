@@ -25,6 +25,11 @@ namespace MiniEXEL.Services
         public const int MaxRows = 150;
         public const int MaxCols = 40;
 
+        // Extra blank rows/columns always shown past the used range, so the
+        // user has empty cells to click into and grow the sheet manually.
+        private const int RowBuffer = 25;
+        private const int ColBuffer = 8;
+
         public static OpenWorkbookResult Open(string path)
         {
             var ext = Path.GetExtension(path);
@@ -63,6 +68,14 @@ namespace MiniEXEL.Services
                 rowCount = Math.Max(rowCount, Math.Min(pic.TopLeftCell.Address.RowNumber, MaxRows));
                 colCount = Math.Max(colCount, Math.Min(pic.TopLeftCell.Address.ColumnNumber, MaxCols));
             }
+
+            // Always keep a buffer of blank rows/columns beyond whatever already
+            // has data — like Excel's own blank canvas — so there's something to
+            // click into and type. Without this, typing was only possible where a
+            // cell already had content; growing the sheet effectively required the
+            // AI assistant, which writes by address instead of through the grid.
+            rowCount = Math.Min(Math.Max(rowCount, 1) + RowBuffer, MaxRows);
+            colCount = Math.Min(Math.Max(colCount, 1) + ColBuffer, MaxCols);
 
             var rows = new System.Collections.Generic.List<ExcelRowVm>(rowCount);
 

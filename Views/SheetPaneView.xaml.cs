@@ -434,6 +434,26 @@ public partial class SheetPaneView : UserControl
 
     public void ResetFind() { _findMatchRow = -1; _findMatchCol = -1; }
 
+    // Selects a cell by its Excel address (e.g. "C5") in the currently loaded
+    // sheet — used after a cross-sheet search switches this pane to a new sheet.
+    public void SelectCellByAddress(string address)
+    {
+        if (GridWorkbook.ItemsSource is not IEnumerable<ExcelRowVm> rows) return;
+        foreach (var row in rows)
+        {
+            for (int c = 0; c < row.Cells.Length; c++)
+            {
+                if (row.Cells[c].Address == address)
+                {
+                    _findMatchRow = row.RowNumber - 1; // best-effort sync with FindNext's own cursor
+                    _findMatchCol = c;
+                    SelectCell(row, c);
+                    return;
+                }
+            }
+        }
+    }
+
     private void SelectCell(ExcelRowVm row, int colIndex)
     {
         var column = GridWorkbook.Columns.FirstOrDefault(col => _columnIndexMap.TryGetValue(col, out var idx) && idx == colIndex);

@@ -35,10 +35,12 @@
         <!-- Find & replace bar -->
         <Border x:Name="FindBar" Grid.Row="1" Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderSoft}" BorderThickness="0,0,0,1" Visibility="Collapsed">
             <StackPanel Orientation="Horizontal" Margin="14,8,14,8">
-                <TextBox x:Name="TxtFind" Width="200" Style="{DynamicResource Win11TextBox}" KeyDown="TxtFind_KeyDown"/>
+                <TextBox x:Name="TxtFind" Width="200" Style="{DynamicResource Win11TextBox}" KeyDown="TxtFind_KeyDown"
+                         ToolTip="Busca en todas las hojas del libro"/>
                 <Button Content="Siguiente" Style="{DynamicResource Win11Button}" Margin="6,0,0,0" Click="BtnFindNext_Click"/>
                 <TextBox x:Name="TxtReplace" Width="200" Style="{DynamicResource Win11TextBox}" Margin="16,0,0,0" ToolTip="Reemplazar por..."/>
-                <Button Content="Reemplazar todo" Style="{DynamicResource Win11Button}" Margin="6,0,0,0" Click="BtnReplaceAll_Click"/>
+                <Button Content="Reemplazar todo" Style="{DynamicResource Win11Button}" Margin="6,0,0,0" Click="BtnReplaceAll_Click"
+                        ToolTip="Solo en la hoja actual"/>
                 <TextBlock x:Name="TxtFindStatus" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="16,0,0,0"/>
                 <Button Content="&#xE711;" FontFamily="Segoe MDL2 Assets" Style="{DynamicResource Win11Button}" Margin="16,0,0,0" Padding="8,4" Click="BtnCloseFind_Click" ToolTip="Cerrar (Esc)"/>
             </StackPanel>
