@@ -3,11 +3,11 @@
 Visor y editor de Excel nativo para Windows, liviano y rápido: detecta tus archivos recientes, los abre con vista estilo Excel (colores, fórmulas, imágenes), y trae un asistente de IA integrado para consultar y modificar tus hojas mayor mente consultas.
 
 <p align="center">
-  <img src="assets/preview.png" alt="MiniEXEL - logo e iconografía" width="480"/>
+  <img src="https://cdn.jsdelivr.net/gh/NanaBru/MiniEXEL-AI@master/assets/preview.png" alt="MiniEXEL - logo e iconografía" width="480"/>
 </p>
 
 <p align="center">
-  <img src="assets/app-screenshot.png" alt="MiniEXEL - pantalla principal" width="480"/>
+  <img src="https://cdn.jsdelivr.net/gh/NanaBru/MiniEXEL-AI@master/assets/app-screenshot.png" alt="MiniEXEL - pantalla principal" width="480"/>
 </p>
 
 ## Demo
@@ -15,13 +15,13 @@ Visor y editor de Excel nativo para Windows, liviano y rápido: detecta tus arch
 **Abrir un Excel**
 
 <p align="center">
-  <img src="assets/demo.gif" alt="Abriendo un Excel en MiniEXEL" width="600"/>
+  <img src="https://cdn.jsdelivr.net/gh/NanaBru/MiniEXEL-AI@master/assets/demo.gif" alt="Abriendo un Excel en MiniEXEL" width="600"/>
 </p>
 
 **Asistente de IA: preguntar y aplicar cambios**
 
 <p align="center">
-  <img src="assets/demo-ia.gif" alt="Consultando al Asistente IA y aplicando el cambio que sugiere en la hoja" width="600"/>
+  <img src="https://cdn.jsdelivr.net/gh/NanaBru/MiniEXEL-AI@master/assets/demo-ia.gif" alt="Consultando al Asistente IA y aplicando el cambio que sugiere en la hoja" width="600"/>
 </p>
 
 ## Características
