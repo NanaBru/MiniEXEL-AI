@@ -345,6 +345,19 @@ public partial class SheetPaneView : UserControl
         string oldValue = cell.RawEditText;
         WorkbookService.ApplyEdit(_workbook, CurrentSheetName, cell.RowNumber, cell.ColNumber, newRawText);
 
+        // Update this exact cell's own snapshot synchronously, right now —
+        // before any awaiting. The instant this method returns to the caller
+        // (DataGrid's CellEditEnding), the grid swaps the cell back from its
+        // editing TextBox to the read-only CellTemplate, which is bound to
+        // this very object. If we waited for the full async reload below to
+        // refresh it, there'd be a window where the grid shows this object's
+        // stale (often blank) value — that's the "text disappears on Enter" bug.
+        var ws = _workbook.Worksheet(CurrentSheetName);
+        var editedXlCell = ws.Cell(cell.RowNumber, cell.ColNumber);
+        try { cell.DisplayValue = editedXlCell.Value.ToString() ?? string.Empty; }
+        catch { cell.DisplayValue = editedXlCell.GetString(); }
+        cell.Formula = editedXlCell.HasFormula ? editedXlCell.FormulaA1 : null;
+
         var sheetName = CurrentSheetName;
         await LoadSheetAsync(sheetName);
 
