@@ -35,10 +35,14 @@ Visor y editor de Excel nativo para Windows, liviano y rápido: detecta tus arch
 - **Ligero de verdad**: GC en modo workstation, vista acotada de filas/columnas, y libera memoria al cerrar cada archivo.
 - **Interfaz Windows 11**: tema oscuro con acentos verdes, barra de título personalizada, ventana maximizable sin tapar la barra de tareas.
 
+## Descarga rápida
+
+¿No querés compilar nada? Bajá el `.zip` ya compilado desde la sección [**Releases**](https://github.com/NanaBru/MiniEXEL-AI/releases/latest), descomprimilo y ejecutá `MiniEXEL.exe`.
+
 ## Requisitos
 
 - Windows 10/11
-- [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) (o el SDK si vas a compilar)
+- [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) (o el SDK si vas a compilar desde el código)
 
 ## Compilar y ejecutar
 

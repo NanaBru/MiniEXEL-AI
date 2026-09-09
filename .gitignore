@@ -13,3 +13,4 @@ obj/
 Thumbs.db
 .DS_Store
 MiniEXEL.exe.lnk
+publish_temp/
