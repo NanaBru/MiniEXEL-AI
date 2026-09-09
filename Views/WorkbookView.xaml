@@ -5,8 +5,9 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:views="clr-namespace:MiniEXEL.Views"
              mc:Ignorable="d" d:DesignHeight="600" d:DesignWidth="1000">
-    <Grid Background="{DynamicResource BgDark}">
+    <Grid Background="{DynamicResource BgDark}" Focusable="True" PreviewKeyDown="Root_PreviewKeyDown">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
@@ -16,8 +17,13 @@
             <StackPanel Orientation="Horizontal" Margin="14,8,14,8">
                 <Button x:Name="BtnBack" Content="&#8592; Volver a la lista" Style="{DynamicResource Win11Button}" Click="BtnBack_Click"/>
                 <Button x:Name="BtnSave" Content="Guardar" Style="{DynamicResource Win11ButtonAccent}" Margin="8,0,0,0" Click="BtnSave_Click"/>
-                <Button x:Name="BtnSplit" Content="&#x25A4; Ver dos hojas" Style="{DynamicResource Win11Button}" Margin="8,0,0,0" Click="BtnSplit_Click"/>
-                <Button x:Name="BtnAi" Content="&#x26A1; Asistente IA" Style="{DynamicResource Win11Button}" Margin="8,0,0,0" Click="BtnAi_Click"/>
+                <Button x:Name="BtnSaveAs" Content="Guardar como..." Style="{DynamicResource Win11Button}" Margin="6,0,0,0" Click="BtnSaveAs_Click"/>
+                <Button x:Name="BtnUndo" Content="&#x21B6;" ToolTip="Deshacer (Ctrl+Z)" FontSize="15" Style="{DynamicResource Win11Button}" Margin="10,0,0,0" Padding="10,4" IsEnabled="False" Click="BtnUndo_Click"/>
+                <Button x:Name="BtnRedo" Content="&#x21B7;" ToolTip="Rehacer (Ctrl+Y)" FontSize="15" Style="{DynamicResource Win11Button}" Margin="4,0,0,0" Padding="10,4" IsEnabled="False" Click="BtnRedo_Click"/>
+                <Button x:Name="BtnFind" Content="&#x1F50D; Buscar" Style="{DynamicResource Win11Button}" Margin="10,0,0,0" Click="BtnFind_Click"/>
+                <Button x:Name="BtnExportCsv" Content="Exportar CSV" Style="{DynamicResource Win11Button}" Margin="6,0,0,0" Click="BtnExportCsv_Click"/>
+                <Button x:Name="BtnSplit" Content="&#x25A4; Ver dos hojas" Style="{DynamicResource Win11Button}" Margin="6,0,0,0" Click="BtnSplit_Click"/>
+                <Button x:Name="BtnAi" Content="&#x26A1; Asistente IA" Style="{DynamicResource Win11Button}" Margin="6,0,0,0" Click="BtnAi_Click"/>
                 <TextBlock x:Name="TxtFileName" Text="" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource TextPrimary}"
                            VerticalAlignment="Center" Margin="16,0,0,0"/>
                 <TextBlock x:Name="TxtDirty" Text="" Foreground="#E8A33D" FontWeight="Bold" VerticalAlignment="Center" Margin="8,0,0,0"/>
@@ -26,8 +32,20 @@
             </StackPanel>
         </Border>
 
+        <!-- Find & replace bar -->
+        <Border x:Name="FindBar" Grid.Row="1" Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderSoft}" BorderThickness="0,0,0,1" Visibility="Collapsed">
+            <StackPanel Orientation="Horizontal" Margin="14,8,14,8">
+                <TextBox x:Name="TxtFind" Width="200" Style="{DynamicResource Win11TextBox}" KeyDown="TxtFind_KeyDown"/>
+                <Button Content="Siguiente" Style="{DynamicResource Win11Button}" Margin="6,0,0,0" Click="BtnFindNext_Click"/>
+                <TextBox x:Name="TxtReplace" Width="200" Style="{DynamicResource Win11TextBox}" Margin="16,0,0,0" ToolTip="Reemplazar por..."/>
+                <Button Content="Reemplazar todo" Style="{DynamicResource Win11Button}" Margin="6,0,0,0" Click="BtnReplaceAll_Click"/>
+                <TextBlock x:Name="TxtFindStatus" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="16,0,0,0"/>
+                <Button Content="&#xE711;" FontFamily="Segoe MDL2 Assets" Style="{DynamicResource Win11Button}" Margin="16,0,0,0" Padding="8,4" Click="BtnCloseFind_Click" ToolTip="Cerrar (Esc)"/>
+            </StackPanel>
+        </Border>
+
         <!-- Content: one or two sheet panes + optional AI panel -->
-        <Grid Grid.Row="1" Background="{DynamicResource BgDark}">
+        <Grid Grid.Row="2" Background="{DynamicResource BgDark}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>

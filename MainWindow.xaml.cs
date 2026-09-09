@@ -21,6 +21,10 @@ public partial class MainWindow : Window
     private readonly ICollectionView _filesView;
     private List<string> _extraFolders = new();
     private string _searchText = string.Empty;
+    private bool _showFavoritesOnly;
+
+    private const string CurrentVersion = "v1.0.0";
+    private const string LatestReleaseUrl = "https://github.com/NanaBru/MiniEXEL-AI/releases/latest";
 
     public MainWindow()
     {
@@ -36,6 +40,59 @@ public partial class MainWindow : Window
 
         LoadFromCacheAndRescan();
         StartRamMonitor();
+        _ = CheckForUpdateAsync();
+    }
+
+    private void Window_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (WorkbookHost.Visibility == Visibility.Visible) return; // let WorkbookView own its own shortcuts
+        if (!System.Windows.Input.Keyboard.Modifiers.HasFlag(System.Windows.Input.ModifierKeys.Control)) return;
+
+        if (e.Key == System.Windows.Input.Key.O)
+        {
+            DropZone_MouseLeftButtonUp(sender, null!);
+            e.Handled = true;
+        }
+        else if (e.Key == System.Windows.Input.Key.F)
+        {
+            TxtSearch.Focus();
+            TxtSearch.SelectAll();
+            e.Handled = true;
+        }
+    }
+
+    // ---------------- Update check ----------------
+
+    private static readonly System.Net.Http.HttpClient _httpClient = new() { Timeout = TimeSpan.FromSeconds(6) };
+
+    private async System.Threading.Tasks.Task CheckForUpdateAsync()
+    {
+        try
+        {
+            _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("MiniEXEL-App");
+            var json = await _httpClient.GetStringAsync("https://api.github.com/repos/NanaBru/MiniEXEL-AI/releases/latest");
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            var tag = doc.RootElement.GetProperty("tag_name").GetString();
+
+            if (!string.IsNullOrEmpty(tag) && tag != CurrentVersion)
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    TxtUpdateNotice.Text = $"⬆ Nueva versión disponible ({tag})";
+                    TxtUpdateNotice.Visibility = Visibility.Visible;
+                });
+            }
+        }
+        catch
+        {
+            // No internet, rate-limited, etc. — silently skip, this is a non-essential check.
+        }
+    }
+
+    private void TxtUpdateNotice_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        try { Process.Start(new ProcessStartInfo(LatestReleaseUrl) { UseShellExecute = true }); }
+        catch { /* ignore */ }
     }
 
     // ---------------- Maximize-covers-taskbar fix ----------------
@@ -164,9 +221,18 @@ public partial class MainWindow : Window
 
     private bool FilterFiles(object obj)
     {
-        if (string.IsNullOrWhiteSpace(_searchText)) return true;
         if (obj is not ExcelFileEntry entry) return false;
+        if (_showFavoritesOnly && !entry.IsFavorite) return false;
+        if (string.IsNullOrWhiteSpace(_searchText)) return true;
         return entry.FileName.Contains(_searchText, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void BtnToggleFavorite_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement fe || fe.Tag is not ExcelFileEntry entry) return;
+        entry.IsFavorite = !entry.IsFavorite;
+        _cache.Save(_files);
+        _filesView.Refresh();
     }
 
     private void LoadFromCacheAndRescan()
@@ -203,7 +269,11 @@ public partial class MainWindow : Window
         // but don't drop entries the user manually kept if they are still on disk.
         var merged = new Dictionary<string, ExcelFileEntry>(StringComparer.OrdinalIgnoreCase);
         foreach (var e in _files) merged[e.Key] = e;
-        foreach (var e in found) merged[e.Key] = e; // fresh scan wins (updates LastSeenUtc, size, date)
+        foreach (var e in found)
+        {
+            if (merged.TryGetValue(e.Key, out var existing)) e.IsFavorite = existing.IsFavorite;
+            merged[e.Key] = e; // fresh scan wins (updates LastSeenUtc, size, date) but keeps the favorite flag
+        }
 
         var finalList = merged.Values
             .Where(e => System.IO.File.Exists(e.FullPath))
@@ -333,7 +403,7 @@ public partial class MainWindow : Window
 
         var merged = new Dictionary<string, ExcelFileEntry>(StringComparer.OrdinalIgnoreCase);
         foreach (var entry in _files) merged[entry.Key] = entry;
-        foreach (var entry in added) merged[entry.Key] = entry; // dropped files refresh existing entries too
+        foreach (var entry in added) { if (merged.TryGetValue(entry.Key, out var ex1)) entry.IsFavorite = ex1.IsFavorite; merged[entry.Key] = entry; }
 
         var finalList = merged.Values.OrderByDescending(x => x.LastModifiedUtc).ToList();
         ReplaceFiles(finalList);
@@ -354,13 +424,20 @@ public partial class MainWindow : Window
 
     // ---------------- Sidebar navigation ----------------
 
-    private void NavInicio_Click(object sender, RoutedEventArgs e) => TxtSearch.Text = string.Empty;
+    private void NavInicio_Click(object sender, RoutedEventArgs e)
+    {
+        TxtSearch.Text = string.Empty;
+        _showFavoritesOnly = false;
+        _filesView.Refresh();
+    }
 
     private void NavRecientes_Click(object sender, RoutedEventArgs e) => RescanAsync();
 
     private void NavFavoritos_Click(object sender, RoutedEventArgs e)
     {
-        TxtStatus.Text = "Favoritos: próximamente.";
+        _showFavoritesOnly = !_showFavoritesOnly;
+        _filesView.Refresh();
+        TxtStatus.Text = _showFavoritesOnly ? "Mostrando solo favoritos." : "Mostrando todos los archivos.";
     }
 
     private void NavExplorar_Click(object sender, RoutedEventArgs e) => BtnAddFolder_Click(sender, e);
@@ -401,7 +478,7 @@ public partial class MainWindow : Window
 
         var merged = new Dictionary<string, ExcelFileEntry>(StringComparer.OrdinalIgnoreCase);
         foreach (var entry in _files) merged[entry.Key] = entry;
-        foreach (var entry in added) merged[entry.Key] = entry;
+        foreach (var entry in added) { if (merged.TryGetValue(entry.Key, out var ex2)) entry.IsFavorite = ex2.IsFavorite; merged[entry.Key] = entry; }
 
         var finalList = merged.Values.OrderByDescending(x => x.LastModifiedUtc).ToList();
         ReplaceFiles(finalList);

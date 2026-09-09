@@ -11,6 +11,7 @@
         MinHeight="460" MinWidth="820"
         Icon="icon.ico"
         WindowStyle="None" ResizeMode="CanResize" Background="#0F1512"
+        PreviewKeyDown="Window_PreviewKeyDown"
         AllowDrop="True" DragEnter="Window_DragEnter" DragLeave="Window_DragLeave" Drop="Window_Drop">
     <shell:WindowChrome.WindowChrome>
         <shell:WindowChrome CaptionHeight="36" ResizeBorderThickness="5" GlassFrameThickness="0" CornerRadius="0"/>
@@ -102,7 +103,7 @@
                                 <TextBlock Text="Recientes" Margin="8,0,0,0"/>
                             </StackPanel>
                         </Button>
-                        <Button x:Name="NavFavoritos" Style="{StaticResource NavButton}" Click="NavFavoritos_Click" ToolTip="Próximamente">
+                        <Button x:Name="NavFavoritos" Style="{StaticResource NavButton}" Click="NavFavoritos_Click">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE734;" FontFamily="Segoe MDL2 Assets" Width="20"/>
                                 <TextBlock Text="Favoritos" Margin="8,0,0,0"/>
@@ -216,6 +217,7 @@
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
 
                                     <Border Grid.Column="0" Width="32" Height="32" CornerRadius="6" Background="#1B4332" VerticalAlignment="Center">
@@ -231,6 +233,17 @@
                                         <TextBlock Text="{Binding SizeDisplay}" Foreground="#8FA098" FontSize="11" VerticalAlignment="Center" Margin="0,0,14,0"/>
                                         <TextBlock Text="{Binding ModifiedDisplay}" Foreground="#8FA098" FontSize="11" VerticalAlignment="Center"/>
                                     </StackPanel>
+
+                                    <Button Grid.Column="3" Click="BtnToggleFavorite_Click" Tag="{Binding}" ToolTip="Marcar/quitar de favoritos"
+                                            Background="Transparent" BorderThickness="0" Padding="8,0,0,0" Cursor="Hand">
+                                        <Button.Template>
+                                            <ControlTemplate TargetType="Button">
+                                                <ContentPresenter/>
+                                            </ControlTemplate>
+                                        </Button.Template>
+                                        <TextBlock Text="{Binding FavoriteGlyph}" FontFamily="Segoe MDL2 Assets" FontSize="15"
+                                                   Foreground="{StaticResource Accent}"/>
+                                    </Button>
                                 </Grid>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
@@ -297,6 +310,9 @@
             <!-- Status bar -->
             <TextBlock x:Name="TxtStatus" Grid.Column="1" VerticalAlignment="Bottom" HorizontalAlignment="Left"
                        Text="Listo." Foreground="{StaticResource TextSecondary}" FontSize="11" Margin="26,0,0,4"/>
+            <TextBlock x:Name="TxtUpdateNotice" Grid.Column="1" VerticalAlignment="Bottom" HorizontalAlignment="Right"
+                       Text="" Foreground="{StaticResource Accent}" FontSize="11" Margin="0,0,16,4" Visibility="Collapsed"
+                       Cursor="Hand" MouseLeftButtonUp="TxtUpdateNotice_Click"/>
         </Grid>
 
         <!-- Vista de trabajo: un solo archivo abierto, estilo Excel de Office -->

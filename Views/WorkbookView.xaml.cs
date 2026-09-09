@@ -28,11 +28,17 @@ public partial class WorkbookView : UserControl
     private readonly AiSettingsService _aiSettingsService = new();
     private readonly List<ChatTurn> _chatHistory = new();
 
+    private readonly Stack<List<EditUndoAction>> _undoStack = new();
+    private readonly Stack<List<EditUndoAction>> _redoStack = new();
+    private bool _applyingUndo;
+
     public WorkbookView()
     {
         InitializeComponent();
         Pane1.CellEdited += async (s, sheetName) => await OnCellEdited(Pane2, sheetName);
         Pane2.CellEdited += async (s, sheetName) => await OnCellEdited(Pane1, sheetName);
+        Pane1.EditsApplied += (s, batch) => OnEditsApplied(batch);
+        Pane2.EditsApplied += (s, batch) => OnEditsApplied(batch);
     }
 
     private async Task OnCellEdited(SheetPaneView otherPane, string sheetName)
@@ -40,6 +46,80 @@ public partial class WorkbookView : UserControl
         SetDirty(true);
         // Keep the other pane in sync if it happens to show the same sheet.
         await otherPane.RefreshIfShowingAsync(sheetName);
+    }
+
+    private void OnEditsApplied(List<EditUndoAction> batch)
+    {
+        if (_applyingUndo || batch.Count == 0) return;
+        _undoStack.Push(batch);
+        _redoStack.Clear();
+        UpdateUndoRedoButtons();
+    }
+
+    private void UpdateUndoRedoButtons()
+    {
+        BtnUndo.IsEnabled = _undoStack.Count > 0;
+        BtnRedo.IsEnabled = _redoStack.Count > 0;
+    }
+
+    private async void BtnUndo_Click(object sender, RoutedEventArgs e)
+    {
+        if (_undoStack.Count == 0) return;
+        var batch = _undoStack.Pop();
+        _applyingUndo = true;
+        try
+        {
+            await Pane1.ApplyRawBatchAsync(batch, useOldValue: true);
+            await Pane2.ApplyRawBatchAsync(batch, useOldValue: true);
+        }
+        finally { _applyingUndo = false; }
+        _redoStack.Push(batch);
+        SetDirty(true);
+        UpdateUndoRedoButtons();
+    }
+
+    private async void BtnRedo_Click(object sender, RoutedEventArgs e)
+    {
+        if (_redoStack.Count == 0) return;
+        var batch = _redoStack.Pop();
+        _applyingUndo = true;
+        try
+        {
+            await Pane1.ApplyRawBatchAsync(batch, useOldValue: false);
+            await Pane2.ApplyRawBatchAsync(batch, useOldValue: false);
+        }
+        finally { _applyingUndo = false; }
+        _undoStack.Push(batch);
+        SetDirty(true);
+        UpdateUndoRedoButtons();
+    }
+
+    // ---------------- Keyboard shortcuts ----------------
+
+    private void Root_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        bool ctrl = Keyboard.Modifiers.HasFlag(ModifierKeys.Control);
+        if (!ctrl)
+        {
+            if (e.Key == Key.Escape && FindBar.Visibility == Visibility.Visible)
+            {
+                BtnCloseFind_Click(sender, e);
+                e.Handled = true;
+            }
+            return;
+        }
+
+        switch (e.Key)
+        {
+            case Key.Z: BtnUndo_Click(sender, e); e.Handled = true; break;
+            case Key.Y: BtnRedo_Click(sender, e); e.Handled = true; break;
+            case Key.S:
+                if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift)) BtnSaveAs_Click(sender, e);
+                else BtnSave_Click(sender, e);
+                e.Handled = true;
+                break;
+            case Key.F: BtnFind_Click(sender, e); e.Handled = true; break;
+        }
     }
 
     public async Task OpenFileAsync(string path)
@@ -128,6 +208,119 @@ public partial class WorkbookView : UserControl
         }
     }
 
+    private void BtnSaveAs_Click(object sender, RoutedEventArgs e)
+    {
+        if (_workbook == null || !_supportsRichView)
+        {
+            TxtSaveStatus.Text = "Este formato no se puede guardar desde aquí.";
+            return;
+        }
+
+        var dlg = new Microsoft.Win32.SaveFileDialog
+        {
+            Title = "Guardar copia como",
+            Filter = "Libro de Excel (*.xlsx)|*.xlsx",
+            FileName = Path.GetFileNameWithoutExtension(_currentPath) + " - copia.xlsx",
+            InitialDirectory = Path.GetDirectoryName(_currentPath)
+        };
+        if (dlg.ShowDialog() != true) return;
+
+        try
+        {
+            _workbook.SaveAs(dlg.FileName);
+            _currentPath = dlg.FileName;
+            TxtFileName.Text = Path.GetFileName(_currentPath);
+            SetDirty(false);
+            TxtSaveStatus.Text = "Guardado como " + Path.GetFileName(_currentPath) + ".";
+        }
+        catch (Exception ex)
+        {
+            TxtSaveStatus.Text = $"Error al guardar: {ex.Message}";
+        }
+    }
+
+    private void BtnExportCsv_Click(object sender, RoutedEventArgs e)
+    {
+        if (Pane1.GridWorkbookItemsSource is not System.Collections.IEnumerable rowsEnum)
+        {
+            TxtSaveStatus.Text = "No hay una hoja cargada para exportar.";
+            return;
+        }
+
+        var dlg = new Microsoft.Win32.SaveFileDialog
+        {
+            Title = "Exportar hoja a CSV",
+            Filter = "CSV (*.csv)|*.csv",
+            FileName = Path.GetFileNameWithoutExtension(_currentPath) + " - " + Pane1.CurrentSheetName + ".csv"
+        };
+        if (dlg.ShowDialog() != true) return;
+
+        try
+        {
+            var sb = new StringBuilder();
+            foreach (ExcelRowVm row in rowsEnum)
+            {
+                sb.AppendLine(string.Join(",", row.Cells.Select(c => CsvEscape(c.DisplayValue))));
+            }
+            File.WriteAllText(dlg.FileName, sb.ToString(), new UTF8Encoding(true)); // BOM so Excel opens accented text correctly
+            TxtSaveStatus.Text = "Exportado a " + Path.GetFileName(dlg.FileName) + ".";
+        }
+        catch (Exception ex)
+        {
+            TxtSaveStatus.Text = $"Error al exportar: {ex.Message}";
+        }
+    }
+
+    private static string CsvEscape(string value)
+    {
+        if (value.Contains(',') || value.Contains('"') || value.Contains('\n'))
+            return "\"" + value.Replace("\"", "\"\"") + "\"";
+        return value;
+    }
+
+    // ---------------- Find & replace ----------------
+
+    private void BtnFind_Click(object sender, RoutedEventArgs e)
+    {
+        FindBar.Visibility = FindBar.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
+        if (FindBar.Visibility == Visibility.Visible)
+        {
+            Pane1.ResetFind();
+            TxtFind.Focus();
+        }
+    }
+
+    private void BtnCloseFind_Click(object sender, RoutedEventArgs e)
+    {
+        FindBar.Visibility = Visibility.Collapsed;
+        TxtFindStatus.Text = string.Empty;
+    }
+
+    private void TxtFind_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter) { BtnFindNext_Click(sender, e); e.Handled = true; }
+    }
+
+    private void BtnFindNext_Click(object sender, RoutedEventArgs e)
+    {
+        var query = TxtFind.Text;
+        if (string.IsNullOrEmpty(query)) return;
+
+        bool found = Pane1.FindNext(query);
+        TxtFindStatus.Text = found ? "Encontrado." : "Sin más resultados en esta hoja.";
+        if (!found) Pane1.ResetFind();
+    }
+
+    private async void BtnReplaceAll_Click(object sender, RoutedEventArgs e)
+    {
+        var query = TxtFind.Text;
+        if (string.IsNullOrEmpty(query)) return;
+
+        int count = await Pane1.ReplaceAllAsync(query, TxtReplace.Text);
+        TxtFindStatus.Text = count > 0 ? $"{count} reemplazo(s) hecho(s)." : "Sin coincidencias.";
+        if (count > 0) SetDirty(true);
+    }
+
     public void CloseWorkbook()
     {
         _workbook?.Dispose();
@@ -142,6 +335,11 @@ public partial class WorkbookView : UserControl
         PaneSplitter.Visibility = Visibility.Collapsed;
         Pane2.Visibility = Visibility.Collapsed;
         BtnSplit.Content = "▤ Ver dos hojas";
+
+        FindBar.Visibility = Visibility.Collapsed;
+        _undoStack.Clear();
+        _redoStack.Clear();
+        UpdateUndoRedoButtons();
 
         _chatHistory.Clear();
         ChatMessages.Items.Clear();
@@ -334,12 +532,27 @@ public partial class WorkbookView : UserControl
         }
 
         int applied = 0;
+        var undoBatch = new List<EditUndoAction>();
         foreach (var edit in plan.Edits)
         {
             var targetSheet = string.IsNullOrWhiteSpace(edit.Sheet) ? Pane1.CurrentSheetName : edit.Sheet;
+            var ws = _workbook.Worksheet(targetSheet);
+            string oldValue;
+            try
+            {
+                var cell = ws.Cell(edit.Cell);
+                oldValue = cell.HasFormula ? "=" + cell.FormulaA1 : (cell.Value.ToString() ?? string.Empty);
+            }
+            catch { oldValue = string.Empty; }
+
             if (WorkbookService.TryApplyEditByAddress(_workbook, targetSheet, edit.Cell, edit.Value))
+            {
                 applied++;
+                var addr = ws.Cell(edit.Cell).Address;
+                undoBatch.Add(new EditUndoAction { SheetName = targetSheet, RowNumber = addr.RowNumber, ColNumber = addr.ColumnNumber, OldValue = oldValue, NewValue = edit.Value });
+            }
         }
+        if (undoBatch.Count > 0) OnEditsApplied(undoBatch);
 
         SetDirty(true);
         triggerButton.IsEnabled = false;

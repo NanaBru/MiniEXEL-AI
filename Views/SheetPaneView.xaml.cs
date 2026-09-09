@@ -27,10 +27,19 @@ public partial class SheetPaneView : UserControl
     // workbook dirty and refresh any other pane showing the same sheet.
     public event EventHandler<string>? CellEdited;
 
+    // Raised alongside CellEdited with enough detail (old + new value) for the
+    // host to push an Undo/Redo entry. A single paste or edit can be a batch.
+    public event EventHandler<List<EditUndoAction>>? EditsApplied;
+
+    private int _sortColumnIndex = -1;
+    private bool _sortAscending = true;
+    private int _findMatchRow = -1, _findMatchCol = -1;
+
     private XLWorkbook? _workbook;
     private bool _supportsRichView;
     private string? _legacyPath;
     public string CurrentSheetName { get; private set; } = string.Empty;
+    public object? GridWorkbookItemsSource => GridWorkbook.ItemsSource;
 
     private List<PictureSnapshot> _pictures = new();
     private double _hOffset;
@@ -140,11 +149,22 @@ public partial class SheetPaneView : UserControl
             int colIndex = c;
             var column = new DataGridTemplateColumn
             {
-                Header = ColumnLetter(c),
                 Width = ColWidth,
                 ClipboardContentBinding = new System.Windows.Data.Binding($"Cells[{colIndex}].DisplayValue")
             };
             _columnIndexMap[column] = colIndex;
+
+            // Clickable header: sorts the on-screen rows by this column (view
+            // only — it never reorders rows in the actual .xlsx file).
+            var headerBtn = new FrameworkElementFactory(typeof(Button));
+            headerBtn.SetValue(Button.ContentProperty, ColumnLetter(c));
+            headerBtn.SetValue(Button.BackgroundProperty, Brushes.Transparent);
+            headerBtn.SetValue(Button.BorderThicknessProperty, new Thickness(0));
+            headerBtn.SetValue(Button.PaddingProperty, new Thickness(0));
+            headerBtn.SetValue(Button.CursorProperty, System.Windows.Input.Cursors.Hand);
+            headerBtn.SetValue(Button.ToolTipProperty, "Ordenar por esta columna (solo en pantalla, no cambia el archivo)");
+            headerBtn.AddHandler(Button.ClickEvent, new RoutedEventHandler((s, e) => SortByColumn(colIndex)));
+            column.HeaderTemplate = new DataTemplate { VisualTree = headerBtn };
 
             // Each cell draws its own right/bottom border so grid lines stay
             // straight and continuous regardless of the cell's fill color —
@@ -262,6 +282,9 @@ public partial class SheetPaneView : UserControl
         int maxCol = _columnIndexMap.Count;
         bool anyApplied = false;
 
+        var batch = new List<EditUndoAction>();
+        var ws = _workbook.Worksheet(CurrentSheetName);
+
         for (int r = 0; r < lines.Length; r++)
         {
             var cols = lines[r].Split('\t');
@@ -273,7 +296,9 @@ public partial class SheetPaneView : UserControl
                 int targetColNumber = anchorRow.Cells[anchorColIndex].ColNumber + c;
                 if (targetColNumber > maxCol) break;
 
+                string oldValue = GetRawCellText(ws, targetRowNumber, targetColNumber);
                 WorkbookService.ApplyEdit(_workbook, CurrentSheetName, targetRowNumber, targetColNumber, cols[c]);
+                batch.Add(new EditUndoAction { SheetName = CurrentSheetName, RowNumber = targetRowNumber, ColNumber = targetColNumber, OldValue = oldValue, NewValue = cols[c] });
                 anyApplied = true;
             }
         }
@@ -283,6 +308,15 @@ public partial class SheetPaneView : UserControl
         var sheetName = CurrentSheetName;
         await LoadSheetAsync(sheetName);
         CellEdited?.Invoke(this, sheetName);
+        if (batch.Count > 0) EditsApplied?.Invoke(this, batch);
+    }
+
+    private static string GetRawCellText(IXLWorksheet ws, int row, int col)
+    {
+        var cell = ws.Cell(row, col);
+        if (cell.HasFormula) return "=" + cell.FormulaA1;
+        try { return cell.Value.ToString() ?? string.Empty; }
+        catch { return cell.GetString(); }
     }
 
     private void GridWorkbook_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
@@ -308,6 +342,7 @@ public partial class SheetPaneView : UserControl
         if (_workbook == null) return;
         if (newRawText == cell.RawEditText) return;
 
+        string oldValue = cell.RawEditText;
         WorkbookService.ApplyEdit(_workbook, CurrentSheetName, cell.RowNumber, cell.ColNumber, newRawText);
 
         var sheetName = CurrentSheetName;
@@ -317,6 +352,127 @@ public partial class SheetPaneView : UserControl
         TxtFormulaBar.Text = newRawText;
 
         CellEdited?.Invoke(this, sheetName);
+        EditsApplied?.Invoke(this, new List<EditUndoAction>
+        {
+            new EditUndoAction { SheetName = sheetName, RowNumber = cell.RowNumber, ColNumber = cell.ColNumber, OldValue = oldValue, NewValue = newRawText }
+        });
+    }
+
+    // Applies a batch of raw values directly (used by Undo/Redo). Does not
+    // raise EditsApplied itself — the caller (WorkbookView) owns the stacks.
+    public async Task ApplyRawBatchAsync(List<EditUndoAction> actions, bool useOldValue)
+    {
+        if (_workbook == null) return;
+        string? sheetName = null;
+        foreach (var action in actions)
+        {
+            WorkbookService.ApplyEdit(_workbook, action.SheetName, action.RowNumber, action.ColNumber, useOldValue ? action.OldValue : action.NewValue);
+            sheetName = action.SheetName;
+        }
+        if (sheetName != null) await RefreshIfShowingAsync(sheetName);
+    }
+
+    // ---------------- View-only sort ----------------
+
+    private void SortByColumn(int colIndex)
+    {
+        if (GridWorkbook.ItemsSource is not IEnumerable<ExcelRowVm> rows) return;
+
+        _sortAscending = _sortColumnIndex == colIndex ? !_sortAscending : true;
+        _sortColumnIndex = colIndex;
+
+        var list = rows.ToList();
+        list.Sort((a, b) =>
+        {
+            var va = colIndex < a.Cells.Length ? a.Cells[colIndex].DisplayValue : string.Empty;
+            var vb = colIndex < b.Cells.Length ? b.Cells[colIndex].DisplayValue : string.Empty;
+            int cmp;
+            if (double.TryParse(va, out var da) && double.TryParse(vb, out var db))
+                cmp = da.CompareTo(db);
+            else
+                cmp = string.Compare(va, vb, StringComparison.CurrentCultureIgnoreCase);
+            return _sortAscending ? cmp : -cmp;
+        });
+
+        GridWorkbook.ItemsSource = list;
+        TxtFormulaBar.Text = $"Ordenado por columna {ColumnLetter(colIndex)} ({(_sortAscending ? "ascendente" : "descendente")}) — solo en pantalla, no modifica el archivo.";
+    }
+
+    // ---------------- Find ----------------
+
+    // Cycles to the next cell (row-major, wrapping) whose display text
+    // contains the query. Returns false if nothing in the loaded sheet matches.
+    public bool FindNext(string query)
+    {
+        if (GridWorkbook.ItemsSource is not IEnumerable<ExcelRowVm> rowsEnum || string.IsNullOrEmpty(query)) return false;
+        var rows = rowsEnum.ToList();
+        if (rows.Count == 0 || rows[0].Cells.Length == 0) return false;
+
+        int colCount = rows[0].Cells.Length;
+        int total = rows.Count * colCount;
+
+        // Flat index of the last match (or -1 if this is the first search), so
+        // "next" always resumes right after wherever we left off, wrapping around.
+        int startIndex = _findMatchRow < 0 ? -1 : _findMatchRow * colCount + _findMatchCol;
+
+        for (int step = 1; step <= total; step++)
+        {
+            int idx = (startIndex + step) % total;
+            int r = idx / colCount;
+            int c = idx % colCount;
+
+            var cell = rows[r].Cells[c];
+            if (cell.DisplayValue.Contains(query, StringComparison.CurrentCultureIgnoreCase))
+            {
+                _findMatchRow = r; _findMatchCol = c;
+                SelectCell(rows[r], c);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void ResetFind() { _findMatchRow = -1; _findMatchCol = -1; }
+
+    private void SelectCell(ExcelRowVm row, int colIndex)
+    {
+        var column = GridWorkbook.Columns.FirstOrDefault(col => _columnIndexMap.TryGetValue(col, out var idx) && idx == colIndex);
+        if (column == null) return;
+        GridWorkbook.SelectedItem = row;
+        GridWorkbook.CurrentCell = new DataGridCellInfo(row, column);
+        GridWorkbook.ScrollIntoView(row, column);
+    }
+
+    // Replaces every match in the currently loaded sheet with newText (skips
+    // formula cells so a running calculation is never silently overwritten).
+    public async Task<int> ReplaceAllAsync(string query, string newText)
+    {
+        if (_workbook == null || GridWorkbook.ItemsSource is not IEnumerable<ExcelRowVm> rowsEnum || string.IsNullOrEmpty(query))
+            return 0;
+
+        var batch = new List<EditUndoAction>();
+        foreach (var row in rowsEnum.ToList())
+        {
+            foreach (var cell in row.Cells)
+            {
+                if (cell.Formula != null) continue;
+                if (!cell.DisplayValue.Contains(query, StringComparison.CurrentCultureIgnoreCase)) continue;
+
+                string oldValue = cell.RawEditText;
+                string replaced = System.Text.RegularExpressions.Regex.Replace(cell.DisplayValue, System.Text.RegularExpressions.Regex.Escape(query), newText, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                WorkbookService.ApplyEdit(_workbook, CurrentSheetName, cell.RowNumber, cell.ColNumber, replaced);
+                batch.Add(new EditUndoAction { SheetName = CurrentSheetName, RowNumber = cell.RowNumber, ColNumber = cell.ColNumber, OldValue = oldValue, NewValue = replaced });
+            }
+        }
+
+        if (batch.Count > 0)
+        {
+            var sheetName = CurrentSheetName;
+            await LoadSheetAsync(sheetName);
+            CellEdited?.Invoke(this, sheetName);
+            EditsApplied?.Invoke(this, batch);
+        }
+        return batch.Count;
     }
 
     private static string ColumnLetter(int zeroBasedIndex)
@@ -359,5 +515,7 @@ public partial class SheetPaneView : UserControl
         TxtFormulaBar.Text = string.Empty;
         TxtNameBox.Text = string.Empty;
         CurrentSheetName = string.Empty;
+        _sortColumnIndex = -1;
+        ResetFind();
     }
 }
