@@ -240,19 +240,7 @@
 
             <!-- Right panel -->
             <StackPanel Grid.Column="2" Margin="0,20,20,20">
-                <Border Background="#12351F" BorderBrush="{StaticResource AccentDim}" BorderThickness="1" CornerRadius="8" Padding="14">
-                    <StackPanel Orientation="Horizontal">
-                        <Border Width="34" Height="34" CornerRadius="7" Background="{StaticResource Accent}" VerticalAlignment="Center">
-                            <TextBlock Text="&#x26A1;" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16"/>
-                        </Border>
-                        <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
-                            <TextBlock Text="MiniEXEL" Foreground="{StaticResource TextPrimary}" FontWeight="Bold"/>
-                            <TextBlock Text="Rápido · Ligero · Eficiente" Foreground="{StaticResource TextSecondary}" FontSize="11"/>
-                        </StackPanel>
-                    </StackPanel>
-                </Border>
-
-                <TextBlock Text="Acciones rápidas" Foreground="{StaticResource TextSecondary}" FontWeight="SemiBold" Margin="4,18,0,8"/>
+                <TextBlock Text="Acciones rápidas" Foreground="{StaticResource TextSecondary}" FontWeight="SemiBold" Margin="4,0,0,8"/>
                 <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="8" Padding="6">
                     <StackPanel>
                         <Button Style="{StaticResource Win11Button}" HorizontalContentAlignment="Left" Margin="0,0,0,4" Click="BtnAddFolder_Click">
