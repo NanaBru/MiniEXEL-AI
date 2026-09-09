@@ -21,4 +21,8 @@
     <PackageReference Include="ClosedXML" Version="0.104.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Resource Include="icon.ico" />
+  </ItemGroup>
+
 </Project>

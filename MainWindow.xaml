@@ -9,6 +9,7 @@
         mc:Ignorable="d"
         Title="MiniEXEL - Visor ligero de Excel" Height="680" Width="1150"
         MinHeight="460" MinWidth="820"
+        Icon="icon.ico"
         WindowStyle="None" ResizeMode="CanResize" Background="#0F1512"
         AllowDrop="True" DragEnter="Window_DragEnter" DragLeave="Window_DragLeave" Drop="Window_Drop">
     <shell:WindowChrome.WindowChrome>
@@ -56,9 +57,7 @@
             </Grid.ColumnDefinitions>
 
             <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="12,0,0,0">
-                <Border Width="18" Height="18" CornerRadius="4" Background="{StaticResource Accent}" VerticalAlignment="Center">
-                    <TextBlock Text="X" FontWeight="Bold" FontSize="11" Foreground="#0F1512" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                </Border>
+                <Image Source="icon.ico" Width="18" Height="18" VerticalAlignment="Center"/>
                 <TextBlock Text="MiniEXEL" FontWeight="Bold" Foreground="{StaticResource TextPrimary}"
                            VerticalAlignment="Center" Margin="8,0,0,0"/>
             </StackPanel>
@@ -66,7 +65,7 @@
             <StackPanel Grid.Column="2" Orientation="Horizontal">
                 <Button Style="{StaticResource CaptionButtonDark}" Content="&#xE921;" FontFamily="Segoe MDL2 Assets" FontSize="10" Click="BtnMinimize_Click"/>
                 <Button x:Name="BtnMaximizeRestore" Style="{StaticResource CaptionButtonDark}" Content="&#xE922;" FontFamily="Segoe MDL2 Assets" FontSize="10" Click="BtnMaximizeRestore_Click"/>
-                <Button Style="{StaticResource CaptionButtonDark}" Content="&#xE8BB;" FontFamily="Segoe MDL2 Assets" FontSize="10" Click="BtnClose_Click"/>
+                <Button Style="{StaticResource CaptionButtonClose}" Content="&#xE8BB;" FontFamily="Segoe MDL2 Assets" FontSize="10" Click="BtnClose_Click"/>
             </StackPanel>
         </Grid>
 
@@ -154,9 +153,7 @@
                         <DropShadowEffect Color="#000000" Opacity="0.25" BlurRadius="12" ShadowDepth="2"/>
                     </Border.Effect>
                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <Border Width="46" Height="46" CornerRadius="8" Background="{StaticResource Accent}" HorizontalAlignment="Center">
-                            <TextBlock Text="X" FontWeight="Bold" FontSize="20" Foreground="#0F1512" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
+                        <Image Source="icon.ico" Width="46" Height="46" HorizontalAlignment="Center"/>
                         <TextBlock Text="Arrastra un archivo Excel aquí" Foreground="{StaticResource TextPrimary}" FontWeight="SemiBold"
                                    FontSize="14" HorizontalAlignment="Center" Margin="0,10,0,2"/>
                         <TextBlock Text="o haz clic para seleccionar" Foreground="{StaticResource TextSecondary}" FontSize="12" HorizontalAlignment="Center"/>
