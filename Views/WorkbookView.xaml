@@ -1,0 +1,92 @@
+<UserControl x:Class="MiniEXEL.Views.WorkbookView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:views="clr-namespace:MiniEXEL.Views"
+             mc:Ignorable="d" d:DesignHeight="600" d:DesignWidth="1000">
+    <Grid Background="{DynamicResource BgDark}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title bar with back / save / split / AI toggle -->
+        <Border Grid.Row="0" Background="{DynamicResource BgPanelAlt}" BorderBrush="{DynamicResource BorderSoft}" BorderThickness="0,0,0,1">
+            <StackPanel Orientation="Horizontal" Margin="14,8,14,8">
+                <Button x:Name="BtnBack" Content="&#8592; Volver a la lista" Style="{DynamicResource Win11Button}" Click="BtnBack_Click"/>
+                <Button x:Name="BtnSave" Content="Guardar" Style="{DynamicResource Win11ButtonAccent}" Margin="8,0,0,0" Click="BtnSave_Click"/>
+                <Button x:Name="BtnSplit" Content="&#x25A4; Ver dos hojas" Style="{DynamicResource Win11Button}" Margin="8,0,0,0" Click="BtnSplit_Click"/>
+                <Button x:Name="BtnAi" Content="&#x26A1; Asistente IA" Style="{DynamicResource Win11Button}" Margin="8,0,0,0" Click="BtnAi_Click"/>
+                <TextBlock x:Name="TxtFileName" Text="" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource TextPrimary}"
+                           VerticalAlignment="Center" Margin="16,0,0,0"/>
+                <TextBlock x:Name="TxtDirty" Text="" Foreground="#E8A33D" FontWeight="Bold" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                <TextBlock x:Name="TxtNote" Foreground="#E8A33D" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                <TextBlock x:Name="TxtSaveStatus" Foreground="{DynamicResource Accent}" VerticalAlignment="Center" Margin="12,0,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Content: one or two sheet panes + optional AI panel -->
+        <Grid Grid.Row="1" Background="{DynamicResource BgDark}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <Grid Grid.Column="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition x:Name="SplitterCol" Width="0"/>
+                    <ColumnDefinition x:Name="Pane2Col" Width="0"/>
+                </Grid.ColumnDefinitions>
+
+                <views:SheetPaneView x:Name="Pane1" Grid.Column="0"/>
+
+                <GridSplitter x:Name="PaneSplitter" Grid.Column="1" Width="0" HorizontalAlignment="Stretch"
+                              Background="{DynamicResource BorderSoft}" Visibility="Collapsed"/>
+
+                <views:SheetPaneView x:Name="Pane2" Grid.Column="2" Visibility="Collapsed"/>
+            </Grid>
+
+            <!-- AI chat panel -->
+            <Border x:Name="AiPanel" Grid.Column="1" Width="360" Visibility="Collapsed"
+                    BorderBrush="{DynamicResource BorderSoft}" BorderThickness="1,0,0,0" Background="{DynamicResource BgPanelAlt}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="12,10">
+                        <TextBlock Text="&#x26A1; Asistente IA" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
+                        <Button x:Name="BtnAiSettings" Style="{DynamicResource Win11Button}" Margin="10,0,0,0" Padding="8,4" Click="BtnAiSettings_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets"/>
+                                <TextBlock Text=" Configurar" Margin="4,0,0,0"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+
+                    <ScrollViewer x:Name="ChatScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl x:Name="ChatMessages" Margin="10"/>
+                    </ScrollViewer>
+
+                    <TextBlock x:Name="TxtAiStatus" Grid.Row="2" Foreground="{DynamicResource TextSecondary}" Margin="12,0,12,4" TextWrapping="Wrap"/>
+
+                    <Grid Grid.Row="3" Margin="10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="TxtChatInput" Grid.Column="0" AcceptsReturn="False" Style="{DynamicResource Win11TextBox}"
+                                 KeyDown="TxtChatInput_KeyDown"
+                                 ToolTip="Pregúntale sobre este Excel, pídele cambios, o que cree una hoja nueva (Enter para enviar)"/>
+                        <Button x:Name="BtnSendChat" Grid.Column="1" Content="Enviar" Style="{DynamicResource Win11ButtonAccent}" Margin="6,0,0,0" Click="BtnSendChat_Click"/>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

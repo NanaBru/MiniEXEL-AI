@@ -1,0 +1,31 @@
+<Window x:Class="MiniEXEL.Views.AiSettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Configurar Asistente IA" Width="440" SizeToContent="Height"
+        MinHeight="360" MaxHeight="700"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        Background="{DynamicResource BgDark}">
+    <StackPanel Margin="16">
+        <TextBlock Text="Proveedor" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
+        <ComboBox x:Name="CmbProvider" Style="{DynamicResource Win11ComboBox}" Margin="0,4,0,12" SelectionChanged="CmbProvider_SelectionChanged">
+            <ComboBoxItem Content="OpenRouter" Tag="OpenRouter"/>
+            <ComboBoxItem Content="Otro (compatible con API de OpenAI)" Tag="Custom"/>
+        </ComboBox>
+
+        <TextBlock Text="URL base de la API" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
+        <TextBox x:Name="TxtBaseUrl" Style="{DynamicResource Win11TextBox}" Margin="0,4,0,12"/>
+
+        <TextBlock Text="Modelo (ej: openai/gpt-4o-mini)" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
+        <TextBox x:Name="TxtModel" Style="{DynamicResource Win11TextBox}" Margin="0,4,0,12"/>
+
+        <TextBlock Text="API Key" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
+        <PasswordBox x:Name="TxtApiKey" Style="{DynamicResource Win11PasswordBox}" Margin="0,4,0,4"/>
+        <TextBlock Text="Se guarda localmente en tu equipo (%LOCALAPPDATA%\MiniEXEL)."
+                   Foreground="{DynamicResource TextSecondary}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button x:Name="BtnCancel" Content="Cancelar" Style="{DynamicResource Win11Button}" Margin="0,0,8,0" Click="BtnCancel_Click"/>
+            <Button x:Name="BtnSave" Content="Guardar" Style="{DynamicResource Win11ButtonAccent}" Click="BtnSave_Click"/>
+        </StackPanel>
+    </StackPanel>
+</Window>

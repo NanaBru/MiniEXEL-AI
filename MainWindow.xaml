@@ -1,0 +1,321 @@
+<Window x:Class="MiniEXEL.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:MiniEXEL"
+        xmlns:views="clr-namespace:MiniEXEL.Views"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        mc:Ignorable="d"
+        Title="MiniEXEL - Visor ligero de Excel" Height="680" Width="1150"
+        MinHeight="460" MinWidth="820"
+        WindowStyle="None" ResizeMode="CanResize" Background="#0F1512"
+        AllowDrop="True" DragEnter="Window_DragEnter" DragLeave="Window_DragLeave" Drop="Window_Drop">
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="36" ResizeBorderThickness="5" GlassFrameThickness="0" CornerRadius="0"/>
+    </shell:WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <Style TargetType="Button" x:Key="NavButton">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Padding" Value="12,9"/>
+            <Setter Property="Margin" Value="8,2"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}" CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#1B211D"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid x:Name="RootGrid">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="36"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title bar: dark, with the app's green mark -->
+        <Grid Grid.Row="0" Background="{StaticResource BgPanelAlt}" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="12,0,0,0">
+                <Border Width="18" Height="18" CornerRadius="4" Background="{StaticResource Accent}" VerticalAlignment="Center">
+                    <TextBlock Text="X" FontWeight="Bold" FontSize="11" Foreground="#0F1512" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+                <TextBlock Text="MiniEXEL" FontWeight="Bold" Foreground="{StaticResource TextPrimary}"
+                           VerticalAlignment="Center" Margin="8,0,0,0"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="2" Orientation="Horizontal">
+                <Button Style="{StaticResource CaptionButtonDark}" Content="&#xE921;" FontFamily="Segoe MDL2 Assets" FontSize="10" Click="BtnMinimize_Click"/>
+                <Button x:Name="BtnMaximizeRestore" Style="{StaticResource CaptionButtonDark}" Content="&#xE922;" FontFamily="Segoe MDL2 Assets" FontSize="10" Click="BtnMaximizeRestore_Click"/>
+                <Button Style="{StaticResource CaptionButtonDark}" Content="&#xE8BB;" FontFamily="Segoe MDL2 Assets" FontSize="10" Click="BtnClose_Click"/>
+            </StackPanel>
+        </Grid>
+
+        <Grid Grid.Row="1" Background="{StaticResource BgDark}">
+        <Grid x:Name="ListHost">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="210"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="300"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Sidebar -->
+            <Border Grid.Column="0" Background="{StaticResource BgPanelAlt}" BorderBrush="{StaticResource BorderSoft}" BorderThickness="0,0,1,0">
+                <DockPanel Margin="0,10,0,14">
+                    <StackPanel DockPanel.Dock="Bottom" Margin="14,0,14,4">
+                        <Border Height="1" Background="{StaticResource BorderSoft}" Margin="0,0,0,10"/>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#x26A1;" Foreground="{StaticResource Accent}" VerticalAlignment="Center"/>
+                            <TextBlock Text="Abre tus Excel" Foreground="{StaticResource TextSecondary}" FontSize="11" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <TextBlock Text="en segundos" Foreground="{StaticResource TextSecondary}" FontSize="11" Margin="18,0,0,0"/>
+                    </StackPanel>
+
+                    <StackPanel>
+                        <Button x:Name="NavInicio" Style="{StaticResource NavButton}" Click="NavInicio_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE80F;" FontFamily="Segoe MDL2 Assets" Width="20"/>
+                                <TextBlock Text="Inicio" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="NavRecientes" Style="{StaticResource NavButton}" Click="NavRecientes_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE823;" FontFamily="Segoe MDL2 Assets" Width="20"/>
+                                <TextBlock Text="Recientes" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="NavFavoritos" Style="{StaticResource NavButton}" Click="NavFavoritos_Click" ToolTip="Próximamente">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE734;" FontFamily="Segoe MDL2 Assets" Width="20"/>
+                                <TextBlock Text="Favoritos" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="NavExplorar" Style="{StaticResource NavButton}" Click="NavExplorar_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE838;" FontFamily="Segoe MDL2 Assets" Width="20"/>
+                                <TextBlock Text="Explorar" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="NavConfig" Style="{StaticResource NavButton}" Click="NavConfig_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" Width="20"/>
+                                <TextBlock Text="Configuración" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <!-- Main content -->
+            <Grid Grid.Column="1" Margin="24,20,24,20">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Search -->
+                <Border Grid.Row="0" Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1"
+                        CornerRadius="8" Padding="10,2" Height="40">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Left" Text="&#xE721;" FontFamily="Segoe MDL2 Assets" Foreground="{StaticResource TextSecondary}"
+                                   VerticalAlignment="Center" Margin="2,0,8,0"/>
+                        <TextBox x:Name="TxtSearch" Background="Transparent" BorderThickness="0" Foreground="{StaticResource TextPrimary}"
+                                 CaretBrush="{StaticResource TextPrimary}" VerticalContentAlignment="Center"
+                                 TextChanged="TxtSearch_TextChanged" Tag="Buscar archivos..."/>
+                    </DockPanel>
+                </Border>
+
+                <!-- Drop zone -->
+                <Border x:Name="DropZone" Grid.Row="1" Margin="0,16,0,0" Height="150" CornerRadius="10"
+                        Background="{StaticResource BgPanel}" BorderBrush="{StaticResource AccentDim}" BorderThickness="1.5"
+                        MouseLeftButtonUp="DropZone_MouseLeftButtonUp" Cursor="Hand">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#000000" Opacity="0.25" BlurRadius="12" ShadowDepth="2"/>
+                    </Border.Effect>
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Border Width="46" Height="46" CornerRadius="8" Background="{StaticResource Accent}" HorizontalAlignment="Center">
+                            <TextBlock Text="X" FontWeight="Bold" FontSize="20" Foreground="#0F1512" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="Arrastra un archivo Excel aquí" Foreground="{StaticResource TextPrimary}" FontWeight="SemiBold"
+                                   FontSize="14" HorizontalAlignment="Center" Margin="0,10,0,2"/>
+                        <TextBlock Text="o haz clic para seleccionar" Foreground="{StaticResource TextSecondary}" FontSize="12" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Recent files header -->
+                <DockPanel Grid.Row="2" Margin="2,20,2,8">
+                    <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                        <TextBlock Text="&#xE823;" FontFamily="Segoe MDL2 Assets" Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center"/>
+                        <TextBlock Text="Archivos recientes" Foreground="{StaticResource TextPrimary}" FontWeight="SemiBold" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <TextBlock DockPanel.Dock="Right" Text="Doble clic para abrir" Foreground="{StaticResource Accent}" HorizontalAlignment="Right"/>
+                </DockPanel>
+
+                <!-- Recent files list -->
+                <Border Grid.Row="3" Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="8">
+                    <ListBox x:Name="GridFiles" Background="Transparent" BorderThickness="0"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             SelectionChanged="GridFiles_SelectionChanged" MouseDoubleClick="GridFiles_MouseDoubleClick">
+                        <ListBox.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Abrir aquí (estilo Excel)" Click="BtnOpenWorkbook_Click"/>
+                                <MenuItem Header="Abrir en Excel" Click="BtnOpenExcel_Click"/>
+                                <Separator/>
+                                <MenuItem Header="Quitar de la lista" Click="BtnRemove_Click"/>
+                            </ContextMenu>
+                        </ListBox.ContextMenu>
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="Padding" Value="12,10"/>
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="BorderBrush" Value="{StaticResource BorderSoft}"/>
+                                <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="ListBoxItem">
+                                            <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                                    BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}">
+                                                <ContentPresenter/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Background" Value="#1B211D"/>
+                                                </Trigger>
+                                                <Trigger Property="IsSelected" Value="True">
+                                                    <Setter Property="Background" Value="#17281F"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Border Grid.Column="0" Width="32" Height="32" CornerRadius="6" Background="#1B4332" VerticalAlignment="Center">
+                                        <TextBlock Text="X" Foreground="#2ECC71" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+
+                                    <StackPanel Grid.Column="1" Margin="10,0,10,0" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding FileName}" Foreground="#ECF3EF" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding FolderPath}" Foreground="#8FA098" FontSize="11" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding SizeDisplay}" Foreground="#8FA098" FontSize="11" VerticalAlignment="Center" Margin="0,0,14,0"/>
+                                        <TextBlock Text="{Binding ModifiedDisplay}" Foreground="#8FA098" FontSize="11" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Border>
+            </Grid>
+
+            <!-- Right panel -->
+            <StackPanel Grid.Column="2" Margin="0,20,20,20">
+                <Border Background="#12351F" BorderBrush="{StaticResource AccentDim}" BorderThickness="1" CornerRadius="8" Padding="14">
+                    <StackPanel Orientation="Horizontal">
+                        <Border Width="34" Height="34" CornerRadius="7" Background="{StaticResource Accent}" VerticalAlignment="Center">
+                            <TextBlock Text="&#x26A1;" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16"/>
+                        </Border>
+                        <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="MiniEXEL" Foreground="{StaticResource TextPrimary}" FontWeight="Bold"/>
+                            <TextBlock Text="Rápido · Ligero · Eficiente" Foreground="{StaticResource TextSecondary}" FontSize="11"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Text="Acciones rápidas" Foreground="{StaticResource TextSecondary}" FontWeight="SemiBold" Margin="4,18,0,8"/>
+                <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="8" Padding="6">
+                    <StackPanel>
+                        <Button Style="{StaticResource Win11Button}" HorizontalContentAlignment="Left" Margin="0,0,0,4" Click="BtnAddFolder_Click">
+                            <DockPanel>
+                                <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" Width="20"/>
+                                <TextBlock Text="Agregar carpeta"/>
+                            </DockPanel>
+                        </Button>
+                        <Button Style="{StaticResource Win11Button}" HorizontalContentAlignment="Left" Margin="0,0,0,4" Click="BtnRefresh_Click">
+                            <DockPanel>
+                                <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" Width="20"/>
+                                <TextBlock Text="Actualizar recientes"/>
+                            </DockPanel>
+                        </Button>
+                        <Button x:Name="BtnOpenWorkbook" Style="{StaticResource Win11Button}" HorizontalContentAlignment="Left" Margin="0,0,0,4" Click="BtnOpenWorkbook_Click">
+                            <DockPanel>
+                                <TextBlock Text="&#xE8A5;" FontFamily="Segoe MDL2 Assets" Width="20"/>
+                                <TextBlock Text="Abrir aquí (estilo Excel)"/>
+                            </DockPanel>
+                        </Button>
+                        <Button Style="{StaticResource Win11Button}" HorizontalContentAlignment="Left" Click="BtnOpenExcel_Click">
+                            <DockPanel>
+                                <TextBlock Text="&#xE8A7;" FontFamily="Segoe MDL2 Assets" Width="20"/>
+                                <TextBlock Text="Abrir en Excel"/>
+                            </DockPanel>
+                        </Button>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Text="Uso" Foreground="{StaticResource TextSecondary}" FontWeight="SemiBold" Margin="4,18,0,8"/>
+                <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" CornerRadius="8" Padding="14">
+                    <StackPanel>
+                        <Border Height="6" CornerRadius="3" Background="#232B27">
+                            <Border x:Name="RamBar" Height="6" CornerRadius="3" Background="{StaticResource Accent}"
+                                    HorizontalAlignment="Left" Width="40"/>
+                        </Border>
+                        <DockPanel Margin="0,8,0,0">
+                            <TextBlock DockPanel.Dock="Left" Text="Memoria en uso" Foreground="{StaticResource TextSecondary}" FontSize="11"/>
+                            <TextBlock x:Name="TxtRamUsage" DockPanel.Dock="Right" Text="-- MB" Foreground="{StaticResource TextPrimary}" FontSize="11" HorizontalAlignment="Right"/>
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Text="&#x26A1; Tu Excel, más rápido." Foreground="{StaticResource TextSecondary}" FontSize="11" Margin="4,16,0,0"/>
+            </StackPanel>
+
+            <!-- Drag & drop overlay -->
+            <Border x:Name="DropOverlay" Grid.ColumnSpan="3" Background="#CC1E5C34"
+                    Visibility="Collapsed" IsHitTestVisible="False">
+                <TextBlock Text="Suelta los archivos Excel aquí" Foreground="White" FontSize="24"
+                           FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+
+            <!-- Status bar -->
+            <TextBlock x:Name="TxtStatus" Grid.Column="1" VerticalAlignment="Bottom" HorizontalAlignment="Left"
+                       Text="Listo." Foreground="{StaticResource TextSecondary}" FontSize="11" Margin="26,0,0,4"/>
+        </Grid>
+
+        <!-- Vista de trabajo: un solo archivo abierto, estilo Excel de Office -->
+        <views:WorkbookView x:Name="WorkbookHost" Visibility="Collapsed"/>
+        </Grid>
+    </Grid>
+</Window>
